@@ -59,6 +59,8 @@ TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
 
+volatile uint8_t u8_ButtonPushed = 0;
+
 /* USER CODE BEGIN PV */
 void Target_Probe(void);
 void Target_MassErase(void);
@@ -119,13 +121,11 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
-  //MX_USB_DEVICE_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
 
-  Target_Probe();
-  Target_MassErase();
-  Target_Program();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -135,7 +135,14 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  	/* Commit Test */
+    if(u8_ButtonPushed)
+    {
+    	u8_ButtonPushed = 0;
+
+      Target_Probe();
+      Target_MassErase();
+      Target_Program();
+    }
   }
   /* USER CODE END 3 */
 }

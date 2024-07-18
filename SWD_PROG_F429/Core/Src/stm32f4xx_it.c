@@ -43,8 +43,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-extern int state;
-extern bool execute;
+extern uint8_t u8_ButtonPushed;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -244,9 +243,7 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(PROGRAM_BTN_Pin);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-  state = getNextState(STATE_CONNECT);
-
-  execute = true;
+  u8_ButtonPushed = 1;
   /* USER CODE END EXTI15_10_IRQn 1 */
 }
 

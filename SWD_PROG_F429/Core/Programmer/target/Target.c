@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "Target.h"
 #include "fatfs.h"
@@ -23,6 +24,7 @@
 Target_InfoTypeDef target;
 
 static void Target_Classify(Target_InfoTypeDef *target);
+bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
 
 void Target_Probe(void)
 {
@@ -56,7 +58,8 @@ void Target_Program(void)
     size_t readcount = 0;
     FRESULT res;
     FIL HexFile;
-    HAL_Delay(6000);
+    ihex_set_callback_func((ihex_callback_fp)*Target_Callback_Test);
+
     res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 0);
     if(res != FR_OK)
     {
@@ -102,9 +105,18 @@ void Target_Program(void)
 
 void Target_MassErase(void)
 {
-	Stm32c0_Flash_Unlock();
-	Stm32c0_Flash_MassErase();
-	Stm32c0_Flash_Lock();
+
+
+	switch(target.TargetFamily)
+	{
+		case TARGET_STM32C0:
+			Stm32c0_Flash_Unlock();
+			Stm32c0_Flash_MassErase();
+			Stm32c0_Flash_Lock();
+			break;
+		default:
+			break;
+	}
 }
 
 
@@ -165,3 +177,36 @@ static void Target_Classify(Target_InfoTypeDef *target)
 	}
 
 }
+
+bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
+{
+	uint64_t tmp[2];
+	Target_StatusTypeDef status = 0;
+
+	Stm32c0_Flash_Unlock();
+
+	memset(&tmp, 0xFF, sizeof(uint64_t));
+
+  for (int i = 0; i < 2; i++) {
+  	tmp[i] = ((uint64_t*)buf)[i];
+  }
+
+	for(uint32_t i = 0; i<16; i+=8)
+	{
+		status = Stm32c0_Flash_Program(addr + i, tmp[i]);
+		if(bufsize < 9)
+			break;
+	}
+
+	if(status == TARGET_OK)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+	Stm32c0_Flash_Lock();
+
+}
+
