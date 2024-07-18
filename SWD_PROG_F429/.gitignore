@@ -1,0 +1,9 @@
+/Debug/
+/.cproject
+/.gitignore
+/.mxproject
+/.project
+/STM32F429NIHX_FLASH.ld
+/STM32F429NIHX_RAM.ld
+/SWD_PROG_F429 Debug.launch
+/SWD_PROG_F429.ioc

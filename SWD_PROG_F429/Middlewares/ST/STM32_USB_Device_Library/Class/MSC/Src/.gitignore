@@ -1,0 +1,4 @@
+/usbd_msc.c
+/usbd_msc_bot.c
+/usbd_msc_data.c
+/usbd_msc_scsi.c
