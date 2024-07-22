@@ -183,6 +183,8 @@ bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 	uint64_t tmp[2];
 	Target_StatusTypeDef status = 0;
 
+	/* Code Test */
+
 	Stm32c0_Flash_Unlock();
 
 	memset(&tmp, 0xFF, sizeof(uint64_t));
