@@ -616,9 +616,9 @@ void writeCpuReg(int reg, uint32_t value)
  * After this completes the debug interface can be used. 
  * Raises an exception on any error during connection. 
  **********************************************************/
-#define BUFFER_SIZE 100
-#define FLASH_BASE 0x08000000
-uint32_t prog[BUFFER_SIZE];
+//#define BUFFER_SIZE 100
+//#define FLASH_BASE 0x08000000
+//uint32_t prog[BUFFER_SIZE];
 
 void connectToTarget(Target_InfoTypeDef *target)
 {

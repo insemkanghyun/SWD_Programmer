@@ -23,8 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include "state_machine.h"
+#include "Target.h"
 
 /* USER CODE END Includes */
 
@@ -35,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define PRINTF_REDIRECTION	int __io_putchar(int ch)
+
 
 
 /* USER CODE END PD */
@@ -59,24 +58,15 @@ TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
 
-volatile uint8_t u8_ButtonPushed = 0;
+
 
 /* USER CODE BEGIN PV */
-void Target_Probe(void);
-void Target_MassErase(void);
-void Target_Program(void);
-void Target_Verfify(void);
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
-void Fatfs_Test(void);
-void f_opendir_scan_sd(void);
-void hexfile_open(void);
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -123,7 +113,7 @@ int main(void)
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start(&htim1);
+
 
 
   /* USER CODE END 2 */
@@ -135,14 +125,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(u8_ButtonPushed)
-    {
-    	u8_ButtonPushed = 0;
+  	Target_Main();
 
-      Target_Probe();
-      Target_MassErase();
-      Target_Program();
-    }
   }
   /* USER CODE END 3 */
 }
@@ -559,21 +543,6 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-
-
-/**
-  * @brief  Retargets the C library printf function to the USART.
-  * @param  None
-  * @retval None
-  */
-PRINTF_REDIRECTION
-{
-  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
-  return ch;
-}
-
-
 /* USER CODE END 4 */
 
 /**

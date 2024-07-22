@@ -5,15 +5,12 @@
  *      Author: kangh
  */
 
-
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "Target.h"
 #include "fatfs.h"
-#include "Prog.h"
 #include "swd\dap.h"
 #include "swd\errors.h"
 #include "swd\utils.h"
@@ -21,10 +18,27 @@
 #include "util\ihex_parser.h"
 #include "stm32c0_flash.h"
 
+#define PRINTF_REDIRECTION	int __io_putchar(int ch)
 Target_InfoTypeDef target;
-
+volatile uint8_t u8_ButtonPushed = 0;
+extern TIM_HandleTypeDef htim1;
+extern UART_HandleTypeDef huart1;
 static void Target_Classify(Target_InfoTypeDef *target);
-bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+
+void Target_Main(void)
+{
+	HAL_TIM_Base_Start(&htim1);
+
+  if(u8_ButtonPushed)
+  {
+  	u8_ButtonPushed = 0;
+    Target_Probe();
+    Target_MassErase();
+    Target_Program();
+  }
+}
+
 
 void Target_Probe(void)
 {
@@ -51,14 +65,13 @@ void Target_Probe(void)
   Error_Handler();
 }
 
-
 void Target_Program(void)
 {
 		uint8_t fbuf[256];
     size_t readcount = 0;
     FRESULT res;
     FIL HexFile;
-    ihex_set_callback_func((ihex_callback_fp)*Target_Callback_Test);
+    ihex_set_callback_func((ihex_callback_fp)*Target_ProgramCallback_STM32C0);
 
     res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 0);
     if(res != FR_OK)
@@ -105,8 +118,6 @@ void Target_Program(void)
 
 void Target_MassErase(void)
 {
-
-
 	switch(target.TargetFamily)
 	{
 		case TARGET_STM32C0:
@@ -120,10 +131,7 @@ void Target_MassErase(void)
 }
 
 
-void Target_Verfify(void)
-{
 
-}
 
 
 static void Target_Classify(Target_InfoTypeDef *target)
@@ -178,14 +186,10 @@ static void Target_Classify(Target_InfoTypeDef *target)
 
 }
 
-bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
+bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 {
 	uint64_t tmp[2];
 	Target_StatusTypeDef status = 0;
-
-	/* Code Test */
-
-	Stm32c0_Flash_Unlock();
 
 	memset(&tmp, 0xFF, sizeof(uint64_t));
 
@@ -193,12 +197,16 @@ bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
   	tmp[i] = ((uint64_t*)buf)[i];
   }
 
-	for(uint32_t i = 0; i<16; i+=8)
+  Stm32c0_Flash_Unlock();
+
+  for(uint32_t i = 0; i < 2; i++)
 	{
-		status = Stm32c0_Flash_Program(addr + i, tmp[i]);
+		status = Stm32c0_Flash_Program(addr + (i*8), tmp[i]);
 		if(bufsize < 9)
 			break;
 	}
+
+  Stm32c0_Flash_Lock();
 
 	if(status == TARGET_OK)
 	{
@@ -208,7 +216,16 @@ bool Target_Callback_Test(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 	{
 		return false;
 	}
-	Stm32c0_Flash_Lock();
+}
 
+void Target_Verfify(void)
+{
+
+}
+
+PRINTF_REDIRECTION
+{
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+  return ch;
 }
 

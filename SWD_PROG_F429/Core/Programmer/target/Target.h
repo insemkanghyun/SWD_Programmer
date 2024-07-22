@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#define FIRMWARE_FILENAME		"FIRMWARE.HEX"
+
 /* Target SW-DP ID */
 #define STM32C0_SWDP_ID		0x0BC11477
 #define STM32H7_SWDP_ID		0x6BA02477
@@ -76,5 +78,6 @@ void Target_Probe(void);
 void Target_MassErase(void);
 void Target_Program(void);
 void Target_Verfify(void);
+void Target_Main(void);
 
 #endif /* UTIL_INC_TARGET_H_ */
