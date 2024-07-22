@@ -114,7 +114,8 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
-
+	/* For DAP usDelay() */
+	HAL_TIM_Base_Start(&htim1);
 
   /* USER CODE END 2 */
 

@@ -1,32 +1,20 @@
-/*
- * stm32c0_flash.h
- *
- *  Created on: Jul 5, 2024
- *      Author: kangh
- */
-
 #ifndef STM32C0_FLASH_H_
 #define STM32C0_FLASH_H_
-#include "target.h"
 
-#define STM32C0_PERIPH_BASE										(0x40000000UL)
-#define STM32C0_AHBPERIPH_BASE								(STM32C0_PERIPH_BASE + 0x00020000UL)
-#define STM32C0_FLASH_R_BASE									(STM32C0_AHBPERIPH_BASE + 0x00002000UL)
-#define STM32C0_FLASH               					(STM32C0_FLASH_R_BASE)
+#include "target.h"
 
 /**
   * @brief FLASH Registers
   */
-#define STM32C0_FLASH_CR					(STM32C0_FLASH_R_BASE) + 0x14
-#define STM32C0_FLASH_SR					(STM32C0_FLASH_R_BASE) + 0x10
-#define STM32C0_FLASH_KEYR				(STM32C0_FLASH_R_BASE) + 0x08
+#define STM32C0_PERIPH_BASE										(0x40000000UL)
+#define STM32C0_AHBPERIPH_BASE								(STM32C0_PERIPH_BASE + 0x00020000UL)
+#define STM32C0_FLASH_R_BASE									(STM32C0_AHBPERIPH_BASE + 0x00002000UL)
+#define STM32C0_FLASH               					(STM32C0_FLASH_R_BASE)
+#define STM32C0_FLASH_CR											(STM32C0_FLASH_R_BASE) + 0x14
+#define STM32C0_FLASH_SR											(STM32C0_FLASH_R_BASE) + 0x10
+#define STM32C0_FLASH_KEYR										(STM32C0_FLASH_R_BASE) + 0x08
+#define STM32C0_FLASH_TIMEOUT_VALUE						1000U          /*!< FLASH Execution Timeout, 1 s */
 
-
-#define STM32C0_FLASH_TIMEOUT_VALUE             1000U          /*!< FLASH Execution Timeout, 1 s */
-
-/** @defgroup FLASH_Exported_Constants FLASH Exported Constants
-  * @{
-  */
 /** @defgroup FLASH_Keys FLASH Keys
   * @{
   */

@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include "dap.h"
 #include "utils.h"
 #include "errors.h"
@@ -417,71 +418,6 @@ void waitForRegReady(void)
   } while ( !(dhcsr & CoreDebug_DHCSR_S_REGRDY_Msk) );
 }
 
-
-/**********************************************************
- * Verifies the current firmware against the locally
- * stored original. This function assumes the firmware
- * has been written to target starting at address 0x00. 
- *
- * @param fwImage
- *    Pointer to locally stored copy of firmware image
- * 
- * @param size
- *    Size (in bytes) of firmware image
- * 
- * @returns 
- *    True if target firmware matches local copy. 
- *    False otherwise. 
- **********************************************************/
-bool verifyFirmware(uint32_t *fwImage, uint32_t size)
-{
-  int i;
-  int numWords = size / 4;
-  bool ret = true;
-  uint32_t value;
-  uint32_t addr;
-  uint32_t tarWrap =  getTarWrap();
-  
-  printf("Verifying firmware\n");
-  
-  /* Set autoincrement on TAR */
-  writeAP(AP_CSW, AP_CSW_DEFAULT | AP_CSW_AUTO_INCREMENT);
-  
-  for ( i=0; i<numWords; i++ ) 
-  {   
-    /* Get current address */
-    addr = i*4;
-        
-    /* TAR must be initialized at every TAR wrap boundary
-     * because the autoincrement wraps around at these */
-    if ( (addr & tarWrap) == 0 )
-    {
-      writeAP(AP_TAR, addr);
-      
-      /* Do one dummy read. Subsequent reads will return the 
-       * correct result. */
-      readAP(AP_DRW, &value);
-    }
-    
-    /* Read the value from addr */
-    readAP(AP_DRW, &value);
-    
-    /* Verify that the read value matches what is expected */
-    if ( value != fwImage[i] ) 
-    {
-      printf("Verification failed at address 0x%.8x\n", addr);
-      printf("Value is 0x%.8x, should have been 0x%.8x\n", value, fwImage[i]);
-      ret = false;
-      break;
-    }
-  }
-  
-  /* Disable autoincrement on TAR */
-  writeAP(AP_CSW, AP_CSW_DEFAULT);
-     
-  return ret;
-}
-
 /**********************************************************
  * Returns true if the @param dpId is a valid
  * IDCODE value. 
@@ -522,114 +458,20 @@ bool verifyAhbApId(uint32_t apId)
   }
 }
 
-/**********************************************************
- * This function will check if a Zero Gecko device is
- * locked. The method is different from other MCUs,
- * we have to read the AAP registers from the internal
- * memory space.
- * 
- * This process can fail (we receive a FAULT response) on 
- * other devices so wee need to check for failure on the AP 
- * transaction and clear the STICKYERR flag in CTRL/STAT 
- * before continuing. 
- **********************************************************/
-void checkIfZeroGeckoIsLocked(void)
-{
-  int readError = SWD_ERROR_OK;
-  uint32_t readVal;
-  uint32_t apId;
-  
-  /* Try reading the AAP_IDR register on Zero. 
-   * Do in a separate TRY/CATCH block in case to allow
-   * failure in this transaction.
-   */
-  TRY 
-    apId = readMem(AAP_IDR_ZERO);
-  CATCH
-    /* If transaction failed. Store error code */
-    readError = errorCode;
-  ENDTRY
-  
-  /* If the transaction was OK we check if we got
-   * access to the AAP registers. If we do, the device
-   * is locked. 
-   */
-  if ( readError == SWD_ERROR_OK )
-  {
-    if ( apId == EFM32_AAP_ID ) 
-    {
-      RAISE(SWD_ERROR_MCU_LOCKED);
-    }
-  } 
-  /* We received a FAULT or WAIT error. This is normal on non-ZG devices. 
-   * If this happens we have to clear the STICKYERR flag before continuing. 
-   * If we do not do this all subsequent AP transactions will fail. 
-   */
-  else if ( readError == SWD_ERROR_FAULT || readError == SWD_ERROR_WAIT )
-  {
-    /* Read CTRL/STAT register */
-    readDP(DP_CTRL, &readVal);
-    
-    /* See if STICKYERR is set */
-    if ( readVal & (1 << 5) )
-    {
-      /* Clear sticky error */
-      writeDP(DP_ABORT, (1 << 2));
-    } 
-  } 
-  /* We received another error, e.g. protocol error. 
-   * Report the error back to the calling function */
-  else  
-  {
-    RAISE(readError);
-  }
-}
-
-
-/**********************************************************
- * Writes a value to a CPU register in the target.
- * 
- * @param reg
- *   The register number to write to
- * 
- * @param value
- *   The value to write to the register
- **********************************************************/
-void writeCpuReg(int reg, uint32_t value)
-{
-  /* Wait until debug register is ready to accept new data */
-  waitForRegReady();
-  
-  /* Write value to Data Register */
-  writeAP(AP_TAR, (uint32_t)&(CoreDebug->DCRDR));
-  writeAP(AP_DRW, value);
-  
-  /* Write register number ot Selector Register. 
-   * This will update the CPU register */
-  writeAP(AP_TAR, (uint32_t)&(CoreDebug->DCRSR));
-  writeAP(AP_DRW, 0x10000 | reg); 
-}
-
 
 /**********************************************************
  * Performs the initialization sequence on the SW-DP. 
  * After this completes the debug interface can be used. 
  * Raises an exception on any error during connection. 
  **********************************************************/
-//#define BUFFER_SIZE 100
-//#define FLASH_BASE 0x08000000
-//uint32_t prog[BUFFER_SIZE];
-
 void connectToTarget(Target_InfoTypeDef *target)
 {
-  uint32_t dpId,apId;
-  
   delayUs(500);
   target->TargetDpId = initDp();
   /* Verify that the DP returns the correct ID */
   if ( !verifyDpId(target->TargetDpId) )
   {
-    printf("Read IDCODE = 0x%.8x\n", target->TargetDpId);
+    printf("Read IDCODE = 0x%08"PRIX32"\n", target->TargetDpId);
     RAISE(SWD_ERROR_INVALID_IDCODE);
   }
   

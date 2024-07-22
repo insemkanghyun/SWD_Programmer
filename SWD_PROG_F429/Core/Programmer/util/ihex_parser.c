@@ -76,6 +76,7 @@ static ihex_callback_fp callback_fp = 0;
                                                 ( (((uint32_t)(addr_hi)) << 16) | ((uint32_t)(addr_lo)) )
 
 #if (CONFIG_IHEX_DEBUG_OUTPUT > 0u)
+#include <inttypes.h>
 static void ihex_debug_output()
 {
     switch (record_type)
@@ -83,13 +84,15 @@ static void ihex_debug_output()
     case 0:         //DATA
     {
         uint32_t address = TRANSFORM_ADDR(address_hi, address_lo);
-        printf("WriteData (0x%08X):", address);
+        //printf("WriteData (0x%08X):", address);
+        printf("WriteData (0x%08"PRIX32"):", address);
 
         uint8_t i;
         uint8_t data_size = data_size_in_nibble >> 1;
         for (i = 0; i < data_size; i++)
         {
-            printf("%02X", data[i]);
+            //printf("%02X", data[i]);
+            printf("%02"PRIX16" ", data[i]);
         }
         printf("\n");
         break;
@@ -100,7 +103,8 @@ static void ihex_debug_output()
         break;
 
     case 2:         //Set extended segment address
-        printf("Set Extended Segment Address:%08X\n", TRANSFORM_ADDR(address_hi, 0x0000));
+        //printf("Set Extended Segment Address:%08X\n", TRANSFORM_ADDR(address_hi, 0x0000));
+    		printf("Set Extended Segment Address:%08"PRIX32"\n", TRANSFORM_ADDR(address_hi, 0x0000));
         break;
 
     case 3:         // Start extended segment address
@@ -108,7 +112,8 @@ static void ihex_debug_output()
         break;
 
     case 4:         //Set linear address
-        printf("Set Linear Address:%08X\n", TRANSFORM_ADDR(address_hi, 0x0000));
+        //printf("Set Linear Address:%08X\n", TRANSFORM_ADDR(address_hi, 0x0000));
+        printf("Set Linear Address:%08"PRIX32"\n", TRANSFORM_ADDR(address_hi, 0x0000));
         break;
 
     case 5:         // Start linear address
@@ -183,7 +188,8 @@ bool ihex_parser(const uint8_t *steambuf, uint32_t size)
                 byte_count = 0;
                 record_type = 0;
                 address_lo = 0x0000;
-                memset(data, 0, sizeof(data));
+                //memset(data, 0, sizeof(data));
+                memset(data, 0xFF, sizeof(data));
                 data_size_in_nibble = 0;
                 ++state;
             }

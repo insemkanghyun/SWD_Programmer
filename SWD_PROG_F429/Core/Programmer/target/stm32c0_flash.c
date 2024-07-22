@@ -4,10 +4,16 @@
 #include "target.h"
 #include "utils.h"
 
+/**
+  * @brief  Perform a mass erase.
+  * @retval Target Status
+  */
 Target_StatusTypeDef Stm32c0_Flash_MassErase(void)
 {
 	Target_StatusTypeDef status;
 	uint32_t tmp = 0;
+
+	/* Wait for last operation to be completed */
 	status = Stm32c0_Flash_WaitOperation(STM32C0_FLASH_TIMEOUT_VALUE);
 
 	if(status == TARGET_OK)
@@ -20,6 +26,13 @@ Target_StatusTypeDef Stm32c0_Flash_MassErase(void)
 	return  status;
 }
 
+/**
+  * @brief  Program double word of a row at a specified address.
+  * @param  Address Specifies the address to be programmed.
+  * @param  Data Specifies the data to be programmed
+  *               This parameter is the data for the double word program.
+  * @retval Target_StatusTypeDef Target Status
+  */
 Target_StatusTypeDef Stm32c0_Flash_Program(uint32_t Address, uint64_t Data)
 {
 		Target_StatusTypeDef status;
@@ -52,7 +65,10 @@ Target_StatusTypeDef Stm32c0_Flash_Program(uint32_t Address, uint64_t Data)
 	return status;
 }
 
-
+/**
+  * @brief  Unlock the FLASH control register access.
+  * @retval Target Status
+  */
 Target_StatusTypeDef Stm32c0_Flash_Unlock(void)
 {
 	Target_StatusTypeDef status = TARGET_OK;
@@ -66,7 +82,7 @@ Target_StatusTypeDef Stm32c0_Flash_Unlock(void)
 		writeMem(STM32C0_FLASH_KEYR, STM32C0_FLASH_KEY2);
 
 		/* verify Flash is unlock */
-		tmp = (readMem(STM32C0_FLASH_CR)& STM32C0_FLASH_CR_LOCK);
+		tmp = readMem(STM32C0_FLASH_CR)& STM32C0_FLASH_CR_LOCK;
 		if(tmp != 0x00U)
     {
       status = TARGET_ERROR;
@@ -75,16 +91,21 @@ Target_StatusTypeDef Stm32c0_Flash_Unlock(void)
 	return status;
 }
 
+/**
+  * @brief  Lock the FLASH control register access.
+  * @retval Target Status
+  */
 Target_StatusTypeDef Stm32c0_Flash_Lock(void)
 {
-	Target_StatusTypeDef status = TARGET_OK;
+	Target_StatusTypeDef status = TARGET_ERROR;
 	uint32_t tmp = 0;
 
 	/* Set the LOCK Bit to lock the FLASH Registers access */
-	writeMem(STM32C0_FLASH_CR, STM32C0_FLASH_CR_LOCK);
+	tmp = readMem(STM32C0_FLASH_CR);
+	writeMem(STM32C0_FLASH_CR, STM32C0_FLASH_CR_LOCK|tmp);
 
 	/* verify Flash is locked */
-	tmp = readMem(STM32C0_FLASH_CR)& STM32C0_FLASH_CR_LOCK;
+	tmp = readMem(STM32C0_FLASH_CR) & STM32C0_FLASH_CR_LOCK;
 	if(tmp != 0x00U)
   {
     status = TARGET_OK;
@@ -92,6 +113,11 @@ Target_StatusTypeDef Stm32c0_Flash_Lock(void)
 	return status;
 }
 
+/**
+  * @brief  Wait for a FLASH operation to complete.
+  * @param  Timeout maximum flash operation timeout
+  * @retval Target_StatusTypeDef Status
+  */
 Target_StatusTypeDef Stm32c0_Flash_WaitOperation(uint32_t Timeout)
 {
   uint32_t error;

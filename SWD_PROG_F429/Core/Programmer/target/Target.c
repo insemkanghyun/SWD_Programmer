@@ -24,24 +24,26 @@ bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
 
 void Target_MainLoop(void)
 {
-	/* For DAP usDelay() */
-	HAL_TIM_Base_Start(&htim1);
-
 	/* Button programming start */
   if(u8_ButtonPushed)
   {
-    printf("Target Button Pushed\n");
+    /* Reset button status for next programming */
   	u8_ButtonPushed = 0;
+  	printf("Target Button Pushed\n");
 
-  	printf("Target Button Locked\n");
+  	/* Set button lock flag for block when target flash operation  */
   	u8_ButtonLock = 1;
+  	printf("Target Button Locked\n");
+
+  	/* Target flash operation */
     Target_Probe();
     Target_MassErase();
     Target_Program();
     Target_Verfify();
 
-    printf("Target Button Unlocked\n");
+    /* Target flash operation completed & button lock flag release  */
     u8_ButtonLock = 0;
+    printf("Target Button Unlocked\n");
 
     printf("Target program completed.\n");
   }
@@ -51,6 +53,7 @@ void Target_MainLoop(void)
 void Target_Probe(void)
 {
   uint32_t	retry = CONNECT_RETRY_COUNT;
+
   printf("Target Connect\n");
   hardResetTarget();
   delayMs(50);
@@ -204,8 +207,6 @@ bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t b
 	uint64_t tmp[2];
 	Target_StatusTypeDef status = 0;
 
-	memset(&tmp, 0xFF, sizeof(uint64_t));
-
   for (int i = 0; i < 2; i++) {
   	tmp[i] = ((uint64_t*)buf)[i];
   }
@@ -235,6 +236,7 @@ bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 {
 	uint8_t tmp[16];
 	uint32_t u32_ReadData[4];
+	bool ret;
 
 	/* Read 4-word from target flash memory */
 	for(int i = 0; i < 4; i++)
@@ -255,15 +257,16 @@ bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 	{
 		if(buf[i] != tmp[i])
 		{
-			printf("Verification failed at address 0x%.8x\n", addr + i);
+			printf("Verification failed at address 0x%.8x\n", (unsigned int)(addr + i));
 			printf("Value is 0x%.8x, should have been 0x%.8x\n", tmp[i], buf[i]);
-			return false;
+			ret = false;
 		}
 		else
 		{
-			return true;
+			ret = true;
 		}
 	}
+	return ret;
 }
 
 void Target_Verfify(void)
