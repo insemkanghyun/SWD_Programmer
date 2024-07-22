@@ -22,8 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdbool.h>
-#include "state_machine.h"
+#include "target.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -243,7 +242,7 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(PROGRAM_BTN_Pin);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-  u8_ButtonPushed = 1;
+  Target_BuutonPush();
   /* USER CODE END EXTI15_10_IRQn 1 */
 }
 

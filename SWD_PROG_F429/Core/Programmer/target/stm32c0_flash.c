@@ -1,9 +1,3 @@
-/*
- * stm32c0_flash.c
- *
- *  Created on: Jul 5, 2024
- *      Author: kangh
- */
 #include <stdint.h>
 #include "main.h"
 #include "stm32c0_flash.h"

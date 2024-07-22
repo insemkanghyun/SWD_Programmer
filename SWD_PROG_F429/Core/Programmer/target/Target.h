@@ -78,6 +78,7 @@ void Target_Probe(void);
 void Target_MassErase(void);
 void Target_Program(void);
 void Target_Verfify(void);
-void Target_Main(void);
+void Target_MainLoop(void);
+void Target_BuutonPush(void);
 
 #endif /* UTIL_INC_TARGET_H_ */

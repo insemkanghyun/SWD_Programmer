@@ -125,7 +125,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  	Target_Main();
+  	Target_MainLoop();
 
   }
   /* USER CODE END 3 */
@@ -552,6 +552,7 @@ void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+	printf("Error_Handle()\n");
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)

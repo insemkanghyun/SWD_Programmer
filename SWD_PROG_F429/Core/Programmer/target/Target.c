@@ -1,10 +1,3 @@
-/*
- * Target.c
- *
- *  Created on: Jul 5, 2024
- *      Author: kangh
- */
-
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -21,21 +14,36 @@
 #define PRINTF_REDIRECTION	int __io_putchar(int ch)
 Target_InfoTypeDef target;
 volatile uint8_t u8_ButtonPushed = 0;
+volatile uint8_t u8_ButtonLock = 0;
 extern TIM_HandleTypeDef htim1;
 extern UART_HandleTypeDef huart1;
 static void Target_Classify(Target_InfoTypeDef *target);
 bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
 
-void Target_Main(void)
+
+void Target_MainLoop(void)
 {
+	/* For DAP usDelay() */
 	HAL_TIM_Base_Start(&htim1);
 
+	/* Button programming start */
   if(u8_ButtonPushed)
   {
+    printf("Target Button Pushed\n");
   	u8_ButtonPushed = 0;
+
+  	printf("Target Button Locked\n");
+  	u8_ButtonLock = 1;
     Target_Probe();
     Target_MassErase();
     Target_Program();
+    Target_Verfify();
+
+    printf("Target Button Unlocked\n");
+    u8_ButtonLock = 0;
+
+    printf("Target program completed.\n");
   }
 }
 
@@ -43,7 +51,7 @@ void Target_Main(void)
 void Target_Probe(void)
 {
   uint32_t	retry = CONNECT_RETRY_COUNT;
-  printf("SELECT: Connect\n");
+  printf("Target Connect\n");
   hardResetTarget();
   delayMs(50);
 
@@ -71,6 +79,9 @@ void Target_Program(void)
     size_t readcount = 0;
     FRESULT res;
     FIL HexFile;
+
+    printf("Target Program\n");
+
     ihex_set_callback_func((ihex_callback_fp)*Target_ProgramCallback_STM32C0);
 
     res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 0);
@@ -118,6 +129,7 @@ void Target_Program(void)
 
 void Target_MassErase(void)
 {
+	printf("Target MassErase\n");
 	switch(target.TargetFamily)
 	{
 		case TARGET_STM32C0:
@@ -158,6 +170,7 @@ static void Target_Classify(Target_InfoTypeDef *target)
 	target->TargetDevId = tmp & 0xFFF;
 	target->TargetRevId = tmp >> 16;
 
+	printf("Target Device is ");
 	switch(target->TargetDevId)
 	{
 		case STM32C0_DEV_ID1:
@@ -218,9 +231,97 @@ bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t b
 	}
 }
 
+bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
+{
+	uint8_t tmp[16];
+	uint32_t u32_ReadData[4];
+
+	/* Read 4-word from target flash memory */
+	for(int i = 0; i < 4; i++)
+	{
+		u32_ReadData[i] = readMem(addr + (i*4));
+	}
+
+	/* Convert uint32_t to uint8_t */
+  for (int i = 0; i < 4; i++) {
+  	tmp[4 * i]     = u32_ReadData[i] & 0xFF;
+  	tmp[4 * i + 1] = (u32_ReadData[i] >> 8) & 0xFF;
+  	tmp[4 * i + 2] = (u32_ReadData[i] >> 16) & 0xFF;
+  	tmp[4 * i + 3] = (u32_ReadData[i] >> 24) & 0xFF;
+  }
+
+  /* Convert uint32_t to uint8_t */
+	for(int i = 0; i < bufsize; i++)
+	{
+		if(buf[i] != tmp[i])
+		{
+			printf("Verification failed at address 0x%.8x\n", addr + i);
+			printf("Value is 0x%.8x, should have been 0x%.8x\n", tmp[i], buf[i]);
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+}
+
 void Target_Verfify(void)
 {
+	uint8_t fbuf[256];
+  size_t readcount = 0;
+  FRESULT res;
+  FIL HexFile;
 
+  printf("Target Verify\n");
+  ihex_set_callback_func((ihex_callback_fp)*Target_VerifyCallback);
+
+  res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
+  if(res != FR_OK)
+  {
+  	printf("Error - f_open()\n");
+  	Error_Handler();
+  }
+
+  while (1)
+  {
+  	res = f_read(&HexFile, fbuf, sizeof(fbuf), &readcount);
+    if(res != FR_OK)
+    {
+    	printf("Error - f_read()\n");
+    	Error_Handler();
+    }
+
+  	if(readcount ==  0)
+  	{
+  		f_close(&HexFile);
+  		break;
+  	}
+  	else
+  	{
+  		if(readcount < sizeof(fbuf))
+  		{
+  			fbuf[readcount] = '\0';     // Add null teminated char
+  		}
+  		if (!ihex_parser(fbuf, sizeof(fbuf)))
+  		{
+  				printf("Error - ihex_parser()\n");
+  				Error_Handler();
+  		}
+  	}
+  }
+}
+
+void Target_BuutonPush(void)
+{
+  if(u8_ButtonLock == 0)
+  {
+  	u8_ButtonPushed = 1;
+  }
+  else
+  {
+  	/* Do Nothing */
+  }
 }
 
 PRINTF_REDIRECTION
