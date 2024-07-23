@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include "Target.h"
 #include "fatfs.h"
 #include "swd\dap.h"
@@ -12,15 +13,25 @@
 #include "stm32c0_flash.h"
 
 #define PRINTF_REDIRECTION	int __io_putchar(int ch)
+#define TO_BE_IMPLEMENT_CALLBACK 0
+
 Target_InfoTypeDef target;
 volatile uint8_t u8_ButtonPushed = 0;
 volatile uint8_t u8_ButtonLock = 0;
-extern TIM_HandleTypeDef htim1;
 extern UART_HandleTypeDef huart1;
 static void Target_Classify(Target_InfoTypeDef *target);
-bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
-bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
 
+/* iHex_Parser Callback */
+bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+
+bool (*Target_ProgramCallback[])(uint32_t addr, const uint8_t *buf, uint8_t bufsize)={\
+					TO_BE_IMPLEMENT_CALLBACK,\
+					TO_BE_IMPLEMENT_CALLBACK,\
+					TO_BE_IMPLEMENT_CALLBACK,\
+					TO_BE_IMPLEMENT_CALLBACK,\
+					TO_BE_IMPLEMENT_CALLBACK,\
+					Target_ProgramCallback_STM32C0};
 
 void Target_MainLoop(void)
 {
@@ -85,49 +96,54 @@ void Target_Program(void)
 
     printf("Target Program\n");
 
-    ihex_set_callback_func((ihex_callback_fp)*Target_ProgramCallback_STM32C0);
+    /* Hex parser callback registeration */
+    ihex_set_callback_func((ihex_callback_fp)*Target_ProgramCallback[target.TargetFamily]);
 
+    /* File mount */
     res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 0);
     if(res != FR_OK)
     {
-    	printf("Error - f_mount()\n");
     	Error_Handler();
     }
 
+    /* File open */
     res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
     if(res != FR_OK)
     {
-    	printf("Error - f_open()\n");
     	Error_Handler();
     }
 
     while (1)
     {
+    	/* File read */
     	res = f_read(&HexFile, fbuf, sizeof(fbuf), &readcount);
       if(res != FR_OK)
       {
-      	printf("Error - f_read()\n");
       	Error_Handler();
       }
 
+      /* If there is no data to read, end programming loop*/
     	if(readcount ==  0)
     	{
     		f_close(&HexFile);
     		break;
     	}
+    	/* If data is available, hex parsing & swd flash write */
     	else
     	{
+    		/* If readcount smaller then sizeof(buf), add null termination character end of buffer */
     		if(readcount < sizeof(fbuf))
     		{
-    			fbuf[readcount] = '\0';     // Add null teminated char
+    			fbuf[readcount] = '\0';
     		}
+
+    		/* Hex parsing & swd flash write */
     		if (!ihex_parser(fbuf, sizeof(fbuf)))
     		{
-    				printf("Error - ihex_parser()\n");
     				Error_Handler();
     		}
     	}
-    }
+   }
 }
 
 void Target_MassErase(void)
@@ -197,9 +213,9 @@ static void Target_Classify(Target_InfoTypeDef *target)
 			break;
 		default:
 			printf("Unknown.\n");
+			Error_Handler();
 			break;
 	}
-
 }
 
 bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
@@ -207,36 +223,38 @@ bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t b
 	uint64_t tmp[2];
 	Target_StatusTypeDef status = 0;
 
+	/* Convert Hex parsed data (uint8_t, Byte) to uint64_t(Double Word) */
+	/* STM32C0 Flash Double Word Program Support(Standard) */
   for (int i = 0; i < 2; i++) {
   	tmp[i] = ((uint64_t*)buf)[i];
   }
 
+  /*Flash unlock before programming */
   Stm32c0_Flash_Unlock();
+  if(status != TARGET_OK)
+  	return false;
 
   for(uint32_t i = 0; i < 2; i++)
 	{
 		status = Stm32c0_Flash_Program(addr + (i*8), tmp[i]);
+		if(status != TARGET_OK)
+			return false;
+
 		if(bufsize < 9)
 			break;
 	}
 
   Stm32c0_Flash_Lock();
-
-	if(status == TARGET_OK)
-	{
-		return true;
-	}
-	else
-	{
+	if(status != TARGET_OK)
 		return false;
-	}
+
+	return true;
 }
 
 bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 {
 	uint8_t tmp[16];
 	uint32_t u32_ReadData[4];
-	bool ret;
 
 	/* Read 4-word from target flash memory */
 	for(int i = 0; i < 4; i++)
@@ -257,16 +275,12 @@ bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 	{
 		if(buf[i] != tmp[i])
 		{
-			printf("Verification failed at address 0x%.8x\n", (unsigned int)(addr + i));
-			printf("Value is 0x%.8x, should have been 0x%.8x\n", tmp[i], buf[i]);
-			ret = false;
-		}
-		else
-		{
-			ret = true;
+			printf("Verification failed at address 0x%08"PRIX32"\n", (addr + i));
+			printf("Value is 0x%08"PRIX16", should have been 0x%08"PRIX16"\n", tmp[i], buf[i]);
+			return false;
 		}
 	}
-	return ret;
+	return true;
 }
 
 void Target_Verfify(void)
@@ -277,24 +291,27 @@ void Target_Verfify(void)
   FIL HexFile;
 
   printf("Target Verify\n");
+
+  /* Hex parser callback registeration */
   ihex_set_callback_func((ihex_callback_fp)*Target_VerifyCallback);
 
+  /* File open */
   res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
   if(res != FR_OK)
   {
-  	printf("Error - f_open()\n");
   	Error_Handler();
   }
 
   while (1)
   {
+  	/* File read */
   	res = f_read(&HexFile, fbuf, sizeof(fbuf), &readcount);
     if(res != FR_OK)
     {
-    	printf("Error - f_read()\n");
     	Error_Handler();
     }
 
+    /* If there is no data to read, end verfify loop*/
   	if(readcount ==  0)
   	{
   		f_close(&HexFile);
@@ -302,10 +319,13 @@ void Target_Verfify(void)
   	}
   	else
   	{
+  		/* If readcount smaller then sizeof(buf), add null termination character end of buffer */
   		if(readcount < sizeof(fbuf))
   		{
-  			fbuf[readcount] = '\0';     // Add null teminated char
+  			fbuf[readcount] = '\0';
   		}
+
+  		/* Hex parsing & swd flash verify */
   		if (!ihex_parser(fbuf, sizeof(fbuf)))
   		{
   				printf("Error - ihex_parser()\n");

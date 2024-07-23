@@ -42,7 +42,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-extern uint8_t u8_ButtonPushed;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
