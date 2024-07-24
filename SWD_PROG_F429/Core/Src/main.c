@@ -58,8 +58,6 @@ TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
 
-
-
 /* USER CODE BEGIN PV */
 /* USER CODE END PV */
 
@@ -536,7 +534,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(SPI_CS_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 15, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */

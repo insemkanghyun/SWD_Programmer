@@ -70,6 +70,7 @@ void Target_Probe(void)
   delayMs(50);
 
   /* Try connecting several times */
+#if 0
 	while ( retry-- > 0 )
   {
 		TRY
@@ -83,6 +84,24 @@ void Target_Probe(void)
     	delayUs(200);
     ENDTRY
   }
+#else
+	while ( retry-- > 0 )
+  {
+		if(1)
+		{
+			connectToTarget(&target);
+			Target_Classify(&target);
+    	/* Stop retrying */
+    	return;
+		}
+    else
+    {
+    	//printf("SWD Error: %s\n", getErrorString(errorCode));
+    	printf("Failed to connect. Retrying...\n");
+    	delayUs(200);
+    }
+  }
+#endif
   printf("Failed to connect after %d retries\n", CONNECT_RETRY_COUNT);
   Error_Handler();
 }
@@ -98,13 +117,6 @@ void Target_Program(void)
 
     /* Hex parser callback registeration */
     ihex_set_callback_func((ihex_callback_fp)*Target_ProgramCallback[target.TargetFamily]);
-
-    /* File mount */
-    res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 0);
-    if(res != FR_OK)
-    {
-    	Error_Handler();
-    }
 
     /* File open */
     res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);

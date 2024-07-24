@@ -39,6 +39,12 @@ void MX_FATFS_Init(void)
   	printf("FATFS_LinkDriver() failed.\n");
   	Error_Handler();
   }
+
+  retSD = f_mount(&SDFatFS, (TCHAR const*)SDPath, 0);
+  if(retSD != FR_OK)
+  {
+  	Error_Handler();
+  }
   /* USER CODE END Init */
 }
 
