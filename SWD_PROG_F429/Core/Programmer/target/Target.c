@@ -70,12 +70,15 @@ void Target_Probe(void)
   delayMs(50);
 
   /* Try connecting several times */
-#if 0
 	while ( retry-- > 0 )
   {
 		TRY
 			connectToTarget(&target);
 			Target_Classify(&target);
+
+			/* Reset swdErrorIndex, it cause f_open(fatfs) hang. */
+			swdErrorIndex = 0;
+
     	/* Stop retrying */
     	return;
 		CATCH
@@ -84,24 +87,7 @@ void Target_Probe(void)
     	delayUs(200);
     ENDTRY
   }
-#else
-	while ( retry-- > 0 )
-  {
-		if(1)
-		{
-			connectToTarget(&target);
-			Target_Classify(&target);
-    	/* Stop retrying */
-    	return;
-		}
-    else
-    {
-    	//printf("SWD Error: %s\n", getErrorString(errorCode));
-    	printf("Failed to connect. Retrying...\n");
-    	delayUs(200);
-    }
-  }
-#endif
+
   printf("Failed to connect after %d retries\n", CONNECT_RETRY_COUNT);
   Error_Handler();
 }

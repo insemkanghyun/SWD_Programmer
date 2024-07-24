@@ -74,7 +74,7 @@ extern int swdErrorIndex;
 
 /* Start TRY/CATCH block */
 #define TRY { int errorCode = setjmp(swdErrors[++swdErrorIndex]); \
-  if ( errorCode == 0 ) { 
+  if ( errorCode == 0 ) {
 
 /* Start CATCH clause */
 #define CATCH } else {
