@@ -11,6 +11,7 @@
 #include "swd\delay.h"
 #include "util\ihex_parser.h"
 #include "stm32c0_flash.h"
+#include "led.h"
 
 #define PRINTF_REDIRECTION	int __io_putchar(int ch)
 #define TO_BE_IMPLEMENT_CALLBACK 0
@@ -18,8 +19,12 @@
 Target_InfoTypeDef target;
 volatile uint8_t u8_ButtonPushed = 0;
 volatile uint8_t u8_ButtonLock = 0;
+int u32_StartTime = 0;
+int u32_ElasedTime = 0;
+
 extern UART_HandleTypeDef huart1;
 static void Target_Classify(Target_InfoTypeDef *target);
+
 
 /* iHex_Parser Callback */
 bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
@@ -35,9 +40,15 @@ bool (*Target_ProgramCallback[])(uint32_t addr, const uint8_t *buf, uint8_t bufs
 
 void Target_MainLoop(void)
 {
+	Target_StatusTypeDef status = TARGET_ERROR;
+
+
 	/* Button programming start */
   if(u8_ButtonPushed)
   {
+  	Target_LedSet(TARGET_LED_STAT_PROGRAMMING);
+
+  	u32_StartTime = HAL_GetTick();
     /* Reset button status for next programming */
   	u8_ButtonPushed = 0;
   	printf("Target Button Pushed\n");
@@ -47,21 +58,52 @@ void Target_MainLoop(void)
   	printf("Target Button Locked\n");
 
   	/* Target flash operation */
-    Target_Probe();
-    Target_MassErase();
-    Target_Program();
-    Target_Verfify();
+  	status = Target_Connect();
+  	if(status != TARGET_OK)
+  	{
+  		printf("Target Connect Error\n");
+  		Target_LedSet(TARGET_LED_STAT_FAILED);
+  		u8_ButtonLock = 0;
+  		return;
+  	}
 
+  	status = Target_MassErase();
+  	if(status != TARGET_OK)
+  	{
+  		printf("Target MassErase Error\n");
+  		Target_LedSet(TARGET_LED_STAT_FAILED);
+  		u8_ButtonLock = 0;
+  		return;
+  	}
+
+  	status = Target_Program();
+  	if(status != TARGET_OK)
+  	{
+  		printf("Target Program Error\n");
+  		Target_LedSet(TARGET_LED_STAT_FAILED);
+  		u8_ButtonLock = 0;
+  		return;
+  	}
+
+  	status = Target_Verfify();
+  	if(status != TARGET_OK)
+  	{
+  		printf("Target Verify Error\n");
+  		Target_LedSet(TARGET_LED_STAT_FAILED);
+  		u8_ButtonLock = 0;
+  		return;
+  	}
     /* Target flash operation completed & button lock flag release  */
     u8_ButtonLock = 0;
     printf("Target Button Unlocked\n");
-
-    printf("Target program completed.\n");
+    printf("Target program completed\n");
+    u32_ElasedTime = HAL_GetTick() - u32_StartTime;
+    printf("Total Elapsed Programming Time: %d ms\n", u32_ElasedTime);
+    Target_LedSet(TARGET_LED_STAT_COMPLETE);
   }
 }
 
-
-void Target_Probe(void)
+Target_StatusTypeDef Target_Connect(void)
 {
   uint32_t	retry = CONNECT_RETRY_COUNT;
 
@@ -80,19 +122,20 @@ void Target_Probe(void)
 			swdErrorIndex = 0;
 
     	/* Stop retrying */
-    	return;
+    	return TARGET_OK;
 		CATCH
     	printf("SWD Error: %s\n", getErrorString(errorCode));
     	printf("Failed to connect. Retrying...\n");
-    	delayUs(200);
+    	//delayUs(200);
+    	delayMs(200);
     ENDTRY
   }
 
-  printf("Failed to connect after %d retries\n", CONNECT_RETRY_COUNT);
-  Error_Handler();
+  printf("Target Probe Error\n");
+  return TARGET_ERROR;
 }
 
-void Target_Program(void)
+Target_StatusTypeDef Target_Program(void)
 {
 		uint8_t fbuf[256];
     size_t readcount = 0;
@@ -108,7 +151,8 @@ void Target_Program(void)
     res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
     if(res != FR_OK)
     {
-    	Error_Handler();
+    	printf("f_open error\n");
+    	return TARGET_ERROR;
     }
 
     while (1)
@@ -117,13 +161,19 @@ void Target_Program(void)
     	res = f_read(&HexFile, fbuf, sizeof(fbuf), &readcount);
       if(res != FR_OK)
       {
-      	Error_Handler();
+      	printf("f_read error\n");
+      	return TARGET_ERROR;
       }
 
       /* If there is no data to read, end programming loop*/
     	if(readcount ==  0)
     	{
-    		f_close(&HexFile);
+    		res = f_close(&HexFile);
+        if(res != FR_OK)
+        {
+        	printf("f_close error\n");
+        	return TARGET_ERROR;
+        }
     		break;
     	}
     	/* If data is available, hex parsing & swd flash write */
@@ -138,13 +188,15 @@ void Target_Program(void)
     		/* Hex parsing & swd flash write */
     		if (!ihex_parser(fbuf, sizeof(fbuf)))
     		{
-    				Error_Handler();
+    			printf("ihex_parser error\n");
+    			return TARGET_ERROR;
     		}
     	}
    }
+    return TARGET_OK;
 }
 
-void Target_MassErase(void)
+Target_StatusTypeDef Target_MassErase(void)
 {
 	printf("Target MassErase\n");
 	switch(target.TargetFamily)
@@ -157,6 +209,7 @@ void Target_MassErase(void)
 		default:
 			break;
 	}
+	return TARGET_OK;
 }
 
 
@@ -219,7 +272,7 @@ static void Target_Classify(Target_InfoTypeDef *target)
 bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 {
 	uint64_t tmp[2];
-	Target_StatusTypeDef status = 0;
+	Target_StatusTypeDef status = TARGET_OK;
 
 	/* Convert Hex parsed data (uint8_t, Byte) to uint64_t(Double Word) */
 	/* STM32C0 Flash Double Word Program Support(Standard) */
@@ -228,21 +281,24 @@ bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t b
   }
 
   /*Flash unlock before programming */
-  Stm32c0_Flash_Unlock();
+  status = Stm32c0_Flash_Unlock();
   if(status != TARGET_OK)
   	return false;
 
+  /*Flash programming double word */
   for(uint32_t i = 0; i < 2; i++)
 	{
 		status = Stm32c0_Flash_Program(addr + (i*8), tmp[i]);
 		if(status != TARGET_OK)
 			return false;
 
-		if(bufsize < 9)
+		/* If bufsize only one Double word, quit loop */
+		if(bufsize <= 8)
 			break;
 	}
 
-  Stm32c0_Flash_Lock();
+  /*Flash lock after programming */
+  status = Stm32c0_Flash_Lock();
 	if(status != TARGET_OK)
 		return false;
 
@@ -268,20 +324,20 @@ bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
   	tmp[4 * i + 3] = (u32_ReadData[i] >> 24) & 0xFF;
   }
 
-  /* Convert uint32_t to uint8_t */
+  /* Compare Hex & Flash Data */
 	for(int i = 0; i < bufsize; i++)
 	{
 		if(buf[i] != tmp[i])
 		{
 			printf("Verification failed at address 0x%08"PRIX32"\n", (addr + i));
-			printf("Value is 0x%08"PRIX16", should have been 0x%08"PRIX16"\n", tmp[i], buf[i]);
+			printf("Value is 0x%02"PRIX16", should have been 0x%02"PRIX16"\n", tmp[i], buf[i]);
 			return false;
 		}
 	}
 	return true;
 }
 
-void Target_Verfify(void)
+Target_StatusTypeDef Target_Verfify(void)
 {
 	uint8_t fbuf[256];
   size_t readcount = 0;
@@ -297,7 +353,8 @@ void Target_Verfify(void)
   res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
   if(res != FR_OK)
   {
-  	Error_Handler();
+  	printf("f_open error\n");
+  	return TARGET_ERROR;
   }
 
   while (1)
@@ -306,13 +363,20 @@ void Target_Verfify(void)
   	res = f_read(&HexFile, fbuf, sizeof(fbuf), &readcount);
     if(res != FR_OK)
     {
-    	Error_Handler();
+    	printf("f_read error\n");
+    	return TARGET_ERROR;
     }
 
     /* If there is no data to read, end verfify loop*/
   	if(readcount ==  0)
   	{
-  		f_close(&HexFile);
+  		res = f_close(&HexFile);
+      if(res != FR_OK)
+      {
+      	printf("f_close error\n");
+      	return TARGET_ERROR;
+      }
+
   		break;
   	}
   	else
@@ -326,11 +390,12 @@ void Target_Verfify(void)
   		/* Hex parsing & swd flash verify */
   		if (!ihex_parser(fbuf, sizeof(fbuf)))
   		{
-  				printf("Error - ihex_parser()\n");
-  				Error_Handler();
+  				printf("ihex_parser error\n");
+  				return TARGET_ERROR;
   		}
   	}
   }
+  return TARGET_OK;
 }
 
 void Target_BuutonPush(void)
@@ -343,6 +408,12 @@ void Target_BuutonPush(void)
   {
   	/* Do Nothing */
   }
+}
+
+
+void Target_LedSet(LedStatus status)
+{
+	LED_SetState(status);
 }
 
 PRINTF_REDIRECTION

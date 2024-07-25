@@ -1,15 +1,9 @@
-/*
- * Target.h
- *
- *  Created on: Jul 5, 2024
- *      Author: kangh
- */
 
 #ifndef UTIL_INC_TARGET_H_
 #define UTIL_INC_TARGET_H_
 
 #include <stdint.h>
-
+#include "led.h"
 #define FIRMWARE_FILENAME		"FIRMWARE.HEX"
 
 /* Target SW-DP ID */
@@ -64,6 +58,17 @@ typedef enum
   TARGET_STM32H7	= 0x15U,
 } Target_FamilyTypeDef;
 
+
+
+
+#define 	TARGET_FLASH_STATE_IDLE			 0x00U
+#define 	TARGET_FLASH_STATE_CONNECT	 0x01U
+#define 	TARGET_FLASH_STATE_ERASE		 0x02U
+#define 	TARGET_FLASH_STATE_PROGRAM	 0x03U
+#define 	TARGET_FLASH_STATE_VERIFY		 0x04U
+#define 	TARGET_FLASH_STATE_ERROR		 0x05U
+
+
 typedef struct target{
 	uint32_t 							TargetDpId;
 	uint32_t							TargetApId;
@@ -74,11 +79,12 @@ typedef struct target{
 
 
 
-void Target_Probe(void);
-void Target_MassErase(void);
-void Target_Program(void);
-void Target_Verfify(void);
+Target_StatusTypeDef Target_Connect(void);
+Target_StatusTypeDef Target_MassErase(void);
+Target_StatusTypeDef Target_Program(void);
+Target_StatusTypeDef Target_Verfify(void);
 void Target_MainLoop(void);
 void Target_BuutonPush(void);
+void Target_LedSet(LedStatus status);
 
 #endif /* UTIL_INC_TARGET_H_ */

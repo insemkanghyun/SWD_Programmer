@@ -24,7 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Target.h"
-
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -114,6 +114,7 @@ int main(void)
 
 	/* For DAP usDelay() */
 	HAL_TIM_Base_Start(&htim1);
+	Target_LedSet(TARGET_LED_STAT_BOOT);
 
   /* USER CODE END 2 */
 
@@ -479,7 +480,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, SWD_IO_Pin|SWD_CLK_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOG, LED_FAIL_Pin|LED_PROGRAM_Pin|LED_READY_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOG, LED_RED_Pin|LED_ORANGE_Pin|LED_GREEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(TARGET_RST_GPIO_Port, TARGET_RST_Pin, GPIO_PIN_RESET);
@@ -494,8 +495,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_FAIL_Pin LED_PROGRAM_Pin LED_READY_Pin */
-  GPIO_InitStruct.Pin = LED_FAIL_Pin|LED_PROGRAM_Pin|LED_READY_Pin;
+  /*Configure GPIO pins : LED_RED_Pin LED_ORANGE_Pin LED_GREEN_Pin */
+  GPIO_InitStruct.Pin = LED_RED_Pin|LED_ORANGE_Pin|LED_GREEN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
