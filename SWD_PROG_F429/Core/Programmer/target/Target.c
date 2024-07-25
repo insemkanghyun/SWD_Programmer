@@ -21,16 +21,15 @@ volatile uint8_t u8_ButtonPushed = 0;
 volatile uint8_t u8_ButtonLock = 0;
 int u32_StartTime = 0;
 int u32_ElasedTime = 0;
-
 extern UART_HandleTypeDef huart1;
-static void Target_Classify(Target_InfoTypeDef *target);
 
+static void Target_Classify(Target_InfoTypeDef *target);
+static void Target_ErrorHandle(Target_StatusTypeDef status, const char *errorMessage);
 
 /* iHex_Parser Callback */
-bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
-bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
-
-bool (*Target_ProgramCallback[])(uint32_t addr, const uint8_t *buf, uint8_t bufsize)={\
+static bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+static bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize);
+static bool (*Target_ProgramCallback[])(uint32_t addr, const uint8_t *buf, uint8_t bufsize)={\
 					TO_BE_IMPLEMENT_CALLBACK,\
 					TO_BE_IMPLEMENT_CALLBACK,\
 					TO_BE_IMPLEMENT_CALLBACK,\
@@ -42,7 +41,6 @@ void Target_MainLoop(void)
 {
 	Target_StatusTypeDef status = TARGET_ERROR;
 
-
 	/* Button programming start */
   if(u8_ButtonPushed)
   {
@@ -51,54 +49,37 @@ void Target_MainLoop(void)
   	u32_StartTime = HAL_GetTick();
     /* Reset button status for next programming */
   	u8_ButtonPushed = 0;
-  	printf("Target Button Pushed\n");
+  	printf("Programmer Button Pushed\n");
 
   	/* Set button lock flag for block when target flash operation  */
   	u8_ButtonLock = 1;
-  	printf("Target Button Locked\n");
+  	printf("Programmer Button Locked\n");
 
   	/* Target flash operation */
   	status = Target_Connect();
-  	if(status != TARGET_OK)
-  	{
-  		printf("Target Connect Error\n");
-  		Target_LedSet(TARGET_LED_STAT_FAILED);
-  		u8_ButtonLock = 0;
-  		return;
-  	}
+  	Target_ErrorHandle(status, "Target Connect Error");
+  	if(status != TARGET_OK) return;
 
   	status = Target_MassErase();
-  	if(status != TARGET_OK)
-  	{
-  		printf("Target MassErase Error\n");
-  		Target_LedSet(TARGET_LED_STAT_FAILED);
-  		u8_ButtonLock = 0;
-  		return;
-  	}
+  	Target_ErrorHandle(status, "Target MassErase Error");
+  	if(status != TARGET_OK) return;
 
   	status = Target_Program();
-  	if(status != TARGET_OK)
-  	{
-  		printf("Target Program Error\n");
-  		Target_LedSet(TARGET_LED_STAT_FAILED);
-  		u8_ButtonLock = 0;
-  		return;
-  	}
+  	Target_ErrorHandle(status, "Target Program Error");
+  	if(status != TARGET_OK) return;
 
   	status = Target_Verfify();
-  	if(status != TARGET_OK)
-  	{
-  		printf("Target Verify Error\n");
-  		Target_LedSet(TARGET_LED_STAT_FAILED);
-  		u8_ButtonLock = 0;
-  		return;
-  	}
+  	Target_ErrorHandle(status, "Target Verify Error");
+  	if(status != TARGET_OK) return;
+
+  	printf("Target program completed\n");
+
     /* Target flash operation completed & button lock flag release  */
     u8_ButtonLock = 0;
-    printf("Target Button Unlocked\n");
-    printf("Target program completed\n");
+    printf("Programmer Button Unlocked\n");
+
     u32_ElasedTime = HAL_GetTick() - u32_StartTime;
-    printf("Total Elapsed Programming Time: %d ms\n", u32_ElasedTime);
+    printf("Total Elapsed Programming Time: %d ms\n\n", u32_ElasedTime);
     Target_LedSet(TARGET_LED_STAT_COMPLETE);
   }
 }
@@ -141,6 +122,7 @@ Target_StatusTypeDef Target_Program(void)
     size_t readcount = 0;
     FRESULT res;
     FIL HexFile;
+    FILINFO fileInfo;
 
     printf("Target Program\n");
 
@@ -154,6 +136,17 @@ Target_StatusTypeDef Target_Program(void)
     	printf("f_open error\n");
     	return TARGET_ERROR;
     }
+
+    /* File state */
+    res =  f_stat(FIRMWARE_FILENAME, &fileInfo);
+    if(res != FR_OK)
+    {
+    	printf("f_stat error\n");
+    	return TARGET_ERROR;
+    }
+    printf("File name: %s\n", fileInfo.fname);
+    printf("File size: %lu bytes\n", fileInfo.fsize);
+
 
     while (1)
     {
@@ -244,10 +237,10 @@ static void Target_Classify(Target_InfoTypeDef *target)
 	switch(target->TargetDevId)
 	{
 		case STM32C0_DEV_ID1:
-			printf("STM32C011xx\n");
+			printf("STM32C011xx");
 			break;
 		case STM32C0_DEV_ID2:
-			printf("STM32C031xx\n");
+			printf("STM32C031xx");
 			break;
 		case STM32H7_DEV_ID1:
 			printf("STM32H7Rx/7Sx\n");
@@ -263,9 +256,25 @@ static void Target_Classify(Target_InfoTypeDef *target)
 			printf("STM32H745/755 and STM32H747/757\n");
 			break;
 		default:
-			printf("Unknown.\n");
-			Error_Handler();
+			printf("Unknown Device ID.\n");
+			//Error_Handler();
 			break;
+	}
+
+	printf(" | ");
+	//if stm32c0...
+	switch(target->TargetRevId)
+	{
+	case STM32C0_REV_ID1:
+	//case STM32C0_REV_ID3:
+		printf("Revision Code A(1.0)\n");
+		break;
+	case STM32C0_REV_ID2:
+	//case STM32C0_REV_ID4:
+		printf("Revision Code Z(1.1)\n");
+		break;
+	default:
+		printf("Unknown Revision ID\n");
 	}
 }
 
@@ -410,6 +419,15 @@ void Target_BuutonPush(void)
   }
 }
 
+static void Target_ErrorHandle(Target_StatusTypeDef status, const char *errorMessage)
+{
+    if (status != TARGET_OK)
+    {
+        printf("%s\n", errorMessage);
+        Target_LedSet(TARGET_LED_STAT_FAILED);
+        u8_ButtonLock = 0;
+    }
+}
 
 void Target_LedSet(LedStatus status)
 {

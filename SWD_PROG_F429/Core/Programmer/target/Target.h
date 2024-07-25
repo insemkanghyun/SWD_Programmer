@@ -22,6 +22,12 @@
 #define STM32C0_DEV_ID1					0x443 //STM32C011xx
 #define STM32C0_DEV_ID2					0x453 //STM32C031xx
 
+#define STM32C0_REV_ID1					0X1000 //STM32C011xx(0x443) Revision Code A(1.0)
+#define STM32C0_REV_ID2					0X1001 //STM32C011xx(0x443) Revision Code Z(1.1)
+#define STM32C0_REV_ID3					0X1000 //STM32C031xx(0x453) Revision Code A(1.0)
+#define STM32C0_REV_ID4					0X1001 //STM32C031xx(0x453) Revision Code Z(1.1)
+
+
 /* STM32H7 DEV_ID & REV_ID */
 #define STM32H7_DEV_ID1					0x485 //STM32H7Rx/7Sx
 #define STM32H7_DEV_ID2					0x480 //STM32H7A3/7B3/7B0
