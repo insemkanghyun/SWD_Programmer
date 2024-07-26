@@ -12,9 +12,12 @@
 #include "util\ihex_parser.h"
 #include "stm32c0_flash.h"
 #include "led.h"
+#include "buzzer.h"
 
 #define PRINTF_REDIRECTION	int __io_putchar(int ch)
 #define TO_BE_IMPLEMENT_CALLBACK 0
+
+//#define printf(...)
 
 Target_InfoTypeDef target;
 volatile uint8_t u8_ButtonPushed = 0;
@@ -45,8 +48,9 @@ void Target_MainLoop(void)
   if(u8_ButtonPushed)
   {
   	Target_LedSet(TARGET_LED_STAT_PROGRAMMING);
-
+  	Buzzer_SetState(BUZZER_PROG_START);
   	u32_StartTime = HAL_GetTick();
+
     /* Reset button status for next programming */
   	u8_ButtonPushed = 0;
   	printf("Programmer Button Pushed\n");
@@ -59,19 +63,15 @@ void Target_MainLoop(void)
   	status = Target_Connect();
   	Target_ErrorHandle(status, "Target Connect Error");
   	if(status != TARGET_OK) return;
-
   	status = Target_MassErase();
   	Target_ErrorHandle(status, "Target MassErase Error");
   	if(status != TARGET_OK) return;
-
   	status = Target_Program();
   	Target_ErrorHandle(status, "Target Program Error");
   	if(status != TARGET_OK) return;
-
   	status = Target_Verfify();
   	Target_ErrorHandle(status, "Target Verify Error");
   	if(status != TARGET_OK) return;
-
   	printf("Target program completed\n");
 
     /* Target flash operation completed & button lock flag release  */
@@ -80,7 +80,9 @@ void Target_MainLoop(void)
 
     u32_ElasedTime = HAL_GetTick() - u32_StartTime;
     printf("Total Elapsed Programming Time: %d ms\n\n", u32_ElasedTime);
+
     Target_LedSet(TARGET_LED_STAT_COMPLETE);
+    Buzzer_SetState(BUZZER_PROG_COMPLETE);
   }
 }
 
@@ -128,6 +130,7 @@ Target_StatusTypeDef Target_Program(void)
 
     /* Hex parser callback registeration */
     ihex_set_callback_func((ihex_callback_fp)*Target_ProgramCallback[target.TargetFamily]);
+    ihex_reset_state();
 
     /* File open */
     res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
@@ -357,6 +360,7 @@ Target_StatusTypeDef Target_Verfify(void)
 
   /* Hex parser callback registeration */
   ihex_set_callback_func((ihex_callback_fp)*Target_VerifyCallback);
+  ihex_reset_state();
 
   /* File open */
   res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
@@ -425,6 +429,7 @@ static void Target_ErrorHandle(Target_StatusTypeDef status, const char *errorMes
     {
         printf("%s\n", errorMessage);
         Target_LedSet(TARGET_LED_STAT_FAILED);
+        Buzzer_SetState(BUZZER_PROG_FAILED);
         u8_ButtonLock = 0;
     }
 }

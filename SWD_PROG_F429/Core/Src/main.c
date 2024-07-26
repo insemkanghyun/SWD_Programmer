@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "Target.h"
 #include "led.h"
+#include "buzzer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,6 +66,8 @@ UART_HandleTypeDef huart1;
 void SystemClock_Config(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
+
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -114,8 +117,9 @@ int main(void)
 
 	/* For DAP usDelay() */
 	HAL_TIM_Base_Start(&htim1);
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 	Target_LedSet(TARGET_LED_STAT_BOOT);
-
+	Buzzer_SetState(BUZZER_BOOT);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -126,7 +130,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   	Target_MainLoop();
-
   }
   /* USER CODE END 3 */
 }
@@ -363,11 +366,11 @@ void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 59;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
+  htim2.Init.Period = 1000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
