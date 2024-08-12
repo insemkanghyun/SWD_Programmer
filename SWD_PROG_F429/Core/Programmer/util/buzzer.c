@@ -35,7 +35,7 @@ void Buzzer_SetState(BuzzerState state)
 			PlayProgrammingFailedSound();
 			break;
 		case BUZZER_IDLE:
-			PlayIdleSound(); // No sound during idle
+			PlayIdleSound();
 			break;
 		default:
 			break;
@@ -54,42 +54,74 @@ void SetBuzzerFrequency(uint32_t frequency) {
     }
 }
 
-void PlayBootSound(void) {
-    SetBuzzerFrequency(5000); // Set frequency (you can adjust this to match your desired sound)
-    HAL_Delay(500); // 1 second duration
-    SetBuzzerFrequency(0); // Turn off buzzer
-    HAL_Delay(500); // Delay before moving to the next state
+void PlayBootSound(void)
+{
+		/* Set Frequency */
+    SetBuzzerFrequency(5000);
+
+    /* Set Duration */
+    HAL_Delay(500);
+
+    /* Buzzer Off */
+    SetBuzzerFrequency(0);
 }
 
-void PlayDuringProgrammingSound(void) {
-    SetBuzzerFrequency(5000); // Set frequency
-    HAL_Delay(250); // 0.5 second duration
-    SetBuzzerFrequency(0); // Turn off buzzer
-    HAL_Delay(250); // Delay before moving to the next state
+void PlayDuringProgrammingSound(void)
+{
+		/* Set Frequency */
+    SetBuzzerFrequency(5000);
+
+    /* Set Duration */
+    HAL_Delay(150);
+
+    /* Buzzer Off */
+    SetBuzzerFrequency(0);
 }
 
-void PlayProgrammingCompleteSound(void) {
-    SetBuzzerFrequency(5000); // Set frequency
-    HAL_Delay(300); // 0.3 second duration
-    SetBuzzerFrequency(0); // Turn off buzzer
-    HAL_Delay(300); // 0.3 second delay
-    SetBuzzerFrequency(5000); // Set frequency
-    HAL_Delay(300); // 0.3 second duration
-    SetBuzzerFrequency(0); // Turn off buzzer
-    HAL_Delay(500); // Delay before moving to the next state
+void PlayProgrammingCompleteSound(void)
+{
+		/* Set Frequency */
+    SetBuzzerFrequency(5000);
+
+    /* Set Duration */
+    HAL_Delay(300);
+
+    /* Set Frequency */
+    SetBuzzerFrequency(0);
+
+    /* Set Duration */
+    HAL_Delay(300);
+
+    /* Set Frequency */
+    SetBuzzerFrequency(5000);
+
+    /* Set Duration */
+    HAL_Delay(300);
+
+    /* Buzzer Off */
+    SetBuzzerFrequency(0);
 }
 
-void PlayProgrammingFailedSound(void) {
-    for (uint8_t i = 0; i < 6; i++) {
-        SetBuzzerFrequency(5000); // Set frequency
-        HAL_Delay(150); // 0.3 second duration
-        SetBuzzerFrequency(0); // Turn off buzzer
-        HAL_Delay(150); // 0.3 second delay
+void PlayProgrammingFailedSound(void){
+
+    for (uint8_t i = 0; i < 6; i++)
+    {
+    		/* Set Frequency */
+        SetBuzzerFrequency(5000);
+
+        /* Set Duration */
+        HAL_Delay(150);
+
+        /* Buzzer Off */
+        SetBuzzerFrequency(0);
+
+        /* Set Duration */
+        HAL_Delay(150);
     }
-    HAL_Delay(500); // Delay before moving to the next state
 }
 
-void PlayIdleSound(void) {
+void PlayIdleSound(void)
+{
     // No sound during idle
     SetBuzzerFrequency(0);
 }

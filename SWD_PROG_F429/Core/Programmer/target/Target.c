@@ -40,6 +40,7 @@ static bool (*Target_ProgramCallback[])(uint32_t addr, const uint8_t *buf, uint8
 					TO_BE_IMPLEMENT_CALLBACK,\
 					Target_ProgramCallback_STM32C0};
 
+
 void Target_MainLoop(void)
 {
 	Target_StatusTypeDef status = TARGET_ERROR;
@@ -133,7 +134,7 @@ Target_StatusTypeDef Target_Program(void)
     ihex_reset_state();
 
     /* File open */
-    res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
+    res =  f_open(&HexFile, FIRMWARE_FILENAME_HEX, FA_READ);
     if(res != FR_OK)
     {
     	printf("f_open error\n");
@@ -141,7 +142,7 @@ Target_StatusTypeDef Target_Program(void)
     }
 
     /* File state */
-    res =  f_stat(FIRMWARE_FILENAME, &fileInfo);
+    res =  f_stat(FIRMWARE_FILENAME_HEX, &fileInfo);
     if(res != FR_OK)
     {
     	printf("f_stat error\n");
@@ -363,7 +364,7 @@ Target_StatusTypeDef Target_Verfify(void)
   ihex_reset_state();
 
   /* File open */
-  res =  f_open(&HexFile, FIRMWARE_FILENAME, FA_READ);
+  res =  f_open(&HexFile, FIRMWARE_FILENAME_HEX, FA_READ);
   if(res != FR_OK)
   {
   	printf("f_open error\n");
@@ -444,4 +445,5 @@ PRINTF_REDIRECTION
   HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
   return ch;
 }
+
 

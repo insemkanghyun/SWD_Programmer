@@ -4,7 +4,8 @@
 
 #include <stdint.h>
 #include "led.h"
-#define FIRMWARE_FILENAME		"FIRMWARE.HEX"
+#define FIRMWARE_FILENAME_HEX		"FIRMWARE.HEX"
+#define FIRMWARE_FILENAME_BIN		"FIRMWARE.BIN"
 
 /* Target SW-DP ID */
 #define STM32C0_SWDP_ID		0x0BC11477

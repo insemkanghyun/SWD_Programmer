@@ -115,11 +115,16 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
-	/* For DAP usDelay() */
+	/* SWD DAP usDelay(): TIM1 */
 	HAL_TIM_Base_Start(&htim1);
+
+	/* buzzer sound timer pwm start: TIM2 */
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+	/* Set programmer LED & Buzzer state */
 	Target_LedSet(TARGET_LED_STAT_BOOT);
 	Buzzer_SetState(BUZZER_BOOT);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
