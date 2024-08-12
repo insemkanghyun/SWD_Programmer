@@ -56,7 +56,6 @@ void MX_GPIO_Init(void);
 void MX_DMA_Init(void);
 void MX_SDIO_SD_Init(void);
 void MX_TIM1_Init(void);
-void MX_ADC3_Init(void);
 void MX_TIM2_Init(void);
 void MX_USART1_UART_Init(void);
 
@@ -84,8 +83,6 @@ void MX_USART1_UART_Init(void);
 #define LED_ORANGE_GPIO_Port GPIOG
 #define LED_GREEN_Pin GPIO_PIN_6
 #define LED_GREEN_GPIO_Port GPIOG
-#define TARGET_VOL_Pin GPIO_PIN_10
-#define TARGET_VOL_GPIO_Port GPIOF
 #define OPTION_PROG_DIP_SW_Pin GPIO_PIN_0
 #define OPTION_PROG_DIP_SW_GPIO_Port GPIOA
 #define SPI_CS_Pin GPIO_PIN_0
