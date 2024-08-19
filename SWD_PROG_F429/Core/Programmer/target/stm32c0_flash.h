@@ -13,6 +13,10 @@
 #define STM32C0_FLASH_CR											(STM32C0_FLASH_R_BASE) + 0x14
 #define STM32C0_FLASH_SR											(STM32C0_FLASH_R_BASE) + 0x10
 #define STM32C0_FLASH_KEYR										(STM32C0_FLASH_R_BASE) + 0x08
+#define STM32C0_FLASH_OPTR										(STM32C0_FLASH_R_BASE) + 0x20
+#define STM32C0_FLASH_OPTKEYR									(STM32C0_FLASH_R_BASE) + 0x0C
+#define STM32C0_FLASH_OPTION_OPTR							0x1FFF7800
+
 #define STM32C0_FLASH_TIMEOUT_VALUE						1000U          /*!< FLASH Execution Timeout, 1 s */
 
 /** @defgroup FLASH_Keys FLASH Keys
@@ -21,6 +25,9 @@
 #define STM32C0_FLASH_KEY1                      0x45670123U   /*!< Flash key1 */
 #define STM32C0_FLASH_KEY2                      0xCDEF89ABU   /*!< Flash key2: used with FLASH_KEY1
                                                            to unlock the FLASH registers access */
+#define STM32C0_FLASH_OPTKEY1                   0x08192A3BU   /*!< Flash option byte key1 */
+#define STM32C0_FLASH_OPTKEY2                   0x4C5D6E7FU   /*!< Flash option byte key2: used with FLASH_OPTKEY1
+                                                           to allow option bytes operations */
 
 /*******************  Bits definition for FLASH_CR register  ******************/
 #define STM32C0_FLASH_CR_PG_Pos                        (0U)
@@ -138,10 +145,136 @@
 		STM32C0_FLASH_FLAG_MISERR | STM32C0_FLASH_FLAG_FASTERR | STM32C0_FLASH_FLAG_RDERR |   \
 		STM32C0_FLASH_FLAG_OPTVERR)     /*!< All SR error flags */
 
+/*******************  Bits definition for FLASH_OPTR register  ****************/
+#define STM32C0_FLASH_OPTR_RDP_Pos                     (0U)
+#define STM32C0_FLASH_OPTR_RDP_Msk                     (0xFFUL << STM32C0_FLASH_OPTR_RDP_Pos)        /*!< 0x000000FF */
+#define STM32C0_FLASH_OPTR_RDP                         STM32C0_FLASH_OPTR_RDP_Msk
+#define STM32C0_FLASH_OPTR_BOR_EN_Pos                  (8U)
+#define STM32C0_FLASH_OPTR_BOR_EN_Msk                  (0x1UL << STM32C0_FLASH_OPTR_BOR_EN_Pos)      /*!< 0x00000100 */
+#define STM32C0_FLASH_OPTR_BOR_EN                      STM32C0_FLASH_OPTR_BOR_EN_Msk
+#define STM32C0_FLASH_OPTR_BORR_LEV_Pos                (9U)
+#define STM32C0_FLASH_OPTR_BORR_LEV_Msk                (0x3UL << STM32C0_FLASH_OPTR_BORR_LEV_Pos)    /*!< 0x00000600 */
+#define STM32C0_FLASH_OPTR_BORR_LEV                    STM32C0_FLASH_OPTR_BORR_LEV_Msk
+#define STM32C0_FLASH_OPTR_BORR_LEV_0                  (0x1UL << STM32C0_FLASH_OPTR_BORR_LEV_Pos)    /*!< 0x00000200 */
+#define STM32C0_FLASH_OPTR_BORR_LEV_1                  (0x2UL << STM32C0_FLASH_OPTR_BORR_LEV_Pos)    /*!< 0x00000400 */
+#define STM32C0_FLASH_OPTR_BORF_LEV_Pos                (11U)
+#define STM32C0_FLASH_OPTR_BORF_LEV_Msk                (0x3UL << STM32C0_FLASH_OPTR_BORF_LEV_Pos)    /*!< 0x00001800 */
+#define STM32C0_FLASH_OPTR_BORF_LEV                    STM32C0_FLASH_OPTR_BORF_LEV_Msk
+#define STM32C0_FLASH_OPTR_BORF_LEV_0                  (0x1UL << STM32C0_FLASH_OPTR_BORF_LEV_Pos)    /*!< 0x00000800 */
+#define STM32C0_FLASH_OPTR_BORF_LEV_1                  (0x2UL << STM32C0_FLASH_OPTR_BORF_LEV_Pos)    /*!< 0x00001000 */
+#define STM32C0_FLASH_OPTR_nRST_STOP_Pos               (13U)
+#define STM32C0_FLASH_OPTR_nRST_STOP_Msk               (0x1UL << STM32C0_FLASH_OPTR_nRST_STOP_Pos)   /*!< 0x00002000 */
+#define STM32C0_FLASH_OPTR_nRST_STOP                   STM32C0_FLASH_OPTR_nRST_STOP_Msk
+#define STM32C0_FLASH_OPTR_nRST_STDBY_Pos              (14U)
+#define STM32C0_FLASH_OPTR_nRST_STDBY_Msk              (0x1UL << STM32C0_FLASH_OPTR_nRST_STDBY_Pos)  /*!< 0x00004000 */
+#define STM32C0_FLASH_OPTR_nRST_STDBY                  STM32C0_FLASH_OPTR_nRST_STDBY_Msk
+#define STM32C0_FLASH_OPTR_nRST_SHDW_Pos               (15U)
+#define STM32C0_FLASH_OPTR_nRST_SHDW_Msk               (0x1UL << STM32C0_FLASH_OPTR_nRST_SHDW_Pos)   /*!< 0x00008000 */
+#define STM32C0_FLASH_OPTR_nRST_SHDW                   STM32C0_FLASH_OPTR_nRST_SHDW_Msk
+#define STM32C0_FLASH_OPTR_IWDG_SW_Pos                 (16U)
+#define STM32C0_FLASH_OPTR_IWDG_SW_Msk                 (0x1UL << STM32C0_FLASH_OPTR_IWDG_SW_Pos)     /*!< 0x00010000 */
+#define STM32C0_FLASH_OPTR_IWDG_SW                     STM32C0_FLASH_OPTR_IWDG_SW_Msk
+#define STM32C0_FLASH_OPTR_IWDG_STOP_Pos               (17U)
+#define STM32C0_FLASH_OPTR_IWDG_STOP_Msk               (0x1UL << STM32C0_FLASH_OPTR_IWDG_STOP_Pos)   /*!< 0x00020000 */
+#define STM32C0_FLASH_OPTR_IWDG_STOP                   STM32C0_FLASH_OPTR_IWDG_STOP_Msk
+#define STM32C0_FLASH_OPTR_IWDG_STDBY_Pos              (18U)
+#define STM32C0_FLASH_OPTR_IWDG_STDBY_Msk              (0x1UL << STM32C0_FLASH_OPTR_IWDG_STDBY_Pos)  /*!< 0x00040000 */
+#define STM32C0_FLASH_OPTR_IWDG_STDBY                  STM32C0_FLASH_OPTR_IWDG_STDBY_Msk
+#define STM32C0_FLASH_OPTR_WWDG_SW_Pos                 (19U)
+#define STM32C0_FLASH_OPTR_WWDG_SW_Msk                 (0x1UL << STM32C0_FLASH_OPTR_WWDG_SW_Pos)     /*!< 0x00080000 */
+#define STM32C0_FLASH_OPTR_WWDG_SW                     STM32C0_FLASH_OPTR_WWDG_SW_Msk
+#define STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED_Pos        (21U)
+#define STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED_Msk        (0x1UL << STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED_Pos) /*!< 0x00200000 */
+#define STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED            STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED_Msk
+#define STM32C0_FLASH_OPTR_RAM_PARITY_CHECK_Pos        (22U)
+#define STM32C0_FLASH_OPTR_RAM_PARITY_CHECK_Msk        (0x1UL << STM32C0_FLASH_OPTR_RAM_PARITY_CHECK_Pos) /*!< 0x00400000 */
+#define STM32C0_FLASH_OPTR_RAM_PARITY_CHECK            STM32C0_FLASH_OPTR_RAM_PARITY_CHECK_Msk
+#define STM32C0_FLASH_OPTR_SECURE_MUXING_EN_Pos        (23U)
+#define STM32C0_FLASH_OPTR_SECURE_MUXING_EN_Msk        (0x1UL << STM32C0_FLASH_OPTR_SECURE_MUXING_EN_Pos) /*!< 0x00800000 */
+#define STM32C0_FLASH_OPTR_SECURE_MUXING_EN            STM32C0_FLASH_OPTR_SECURE_MUXING_EN_Msk
+#define STM32C0_FLASH_OPTR_nBOOT_SEL_Pos               (24U)
+#define STM32C0_FLASH_OPTR_nBOOT_SEL_Msk               (0x1UL << STM32C0_FLASH_OPTR_nBOOT_SEL_Pos)  /*!< 0x01000000 */
+#define STM32C0_FLASH_OPTR_nBOOT_SEL                   STM32C0_FLASH_OPTR_nBOOT_SEL_Msk
+#define STM32C0_FLASH_OPTR_nBOOT1_Pos                  (25U)
+#define STM32C0_FLASH_OPTR_nBOOT1_Msk                  (0x1UL << STM32C0_FLASH_OPTR_nBOOT1_Pos)     /*!< 0x02000000 */
+#define STM32C0_FLASH_OPTR_nBOOT1                      STM32C0_FLASH_OPTR_nBOOT1_Msk
+#define STM32C0_FLASH_OPTR_nBOOT0_Pos                  (26U)
+#define STM32C0_FLASH_OPTR_nBOOT0_Msk                  (0x1UL << STM32C0_FLASH_OPTR_nBOOT0_Pos)     /*!< 0x04000000 */
+#define STM32C0_FLASH_OPTR_nBOOT0                      STM32C0_FLASH_OPTR_nBOOT0_Msk
+#define STM32C0_FLASH_OPTR_NRST_MODE_Pos               (27U)
+#define STM32C0_FLASH_OPTR_NRST_MODE_Msk               (0x3UL << STM32C0_FLASH_OPTR_NRST_MODE_Pos)  /*!< 0x18000000 */
+#define STM32C0_FLASH_OPTR_NRST_MODE                   STM32C0_FLASH_OPTR_NRST_MODE_Msk
+#define STM32C0_FLASH_OPTR_NRST_MODE_0                 (0x1UL << STM32C0_FLASH_OPTR_NRST_MODE_Pos)  /*!< 0x08000000 */
+#define STM32C0_FLASH_OPTR_NRST_MODE_1                 (0x2UL << STM32C0_FLASH_OPTR_NRST_MODE_Pos)  /*!< 0x10000000 */
+#define STM32C0_FLASH_OPTR_IRHEN_Pos                   (29U)
+#define STM32C0_FLASH_OPTR_IRHEN_Msk                   (0x1UL << STM32C0_FLASH_OPTR_IRHEN_Pos)      /*!< 0x20000000 */
+#define STM32C0_FLASH_OPTR_IRHEN                       STM32C0_FLASH_OPTR_IRHEN_Msk
+
+
+/** @defgroup FLASH_OB_Read_Protection FLASH Option Bytes Read Protection
+  * @{
+  */
+#define STM32C0_OB_RDP_LEVEL_0                  0x000000AAU
+#define STM32C0_OB_RDP_LEVEL_1                  0x000000BBU
+#define STM32C0_OB_RDP_LEVEL_2                  0x000000CCU  /*!< Warning: When enabling read protection level 2
+                                                          it is no more possible to go back to level 1 or 0 */
+/**
+  * @}
+  */
+
+/** @defgroup FLASH_OB_USER_Type FLASH Option Bytes User Type
+  * @{
+  */
+#define STM32C0_OB_USER_BOR_EN                  STM32C0_FLASH_OPTR_BOR_EN                           /*!< BOR reset enable */
+#define STM32C0_OB_USER_BOR_LEV                 (STM32C0_FLASH_OPTR_BORF_LEV | STM32C0_FLASH_OPTR_BORR_LEV) /*!< BOR reset Level */
+#define STM32C0_OB_USER_NRST_STOP               STM32C0_FLASH_OPTR_nRST_STOP                        /*!< Reset generated when entering
+                                                                                         the stop mode */
+#define STM32C0_OB_USER_NRST_STDBY              STM32C0_FLASH_OPTR_nRST_STDBY                       /*!< Reset generated when entering
+                                                                                         the standby mode */
+#define STM32C0_OB_USER_NRST_SHDW               STM32C0_FLASH_OPTR_nRST_SHDW                        /*!< Reset generated when entering
+                                                                                         the shutdown mode */
+#define STM32C0_OB_USER_IWDG_SW                 STM32C0_FLASH_OPTR_IWDG_SW                          /*!< Independent watchdog selection */
+#define STM32C0_OB_USER_IWDG_STOP               STM32C0_FLASH_OPTR_IWDG_STOP                        /*!< Independent watchdog counter
+                                                                                         freeze in stop mode */
+#define STM32C0_OB_USER_IWDG_STDBY              STM32C0_FLASH_OPTR_IWDG_STDBY                       /*!< Independent watchdog counter
+                                                                                         freeze in standby mode */
+#define STM32C0_OB_USER_WWDG_SW                 STM32C0_FLASH_OPTR_WWDG_SW                          /*!< Window watchdog selection */
+#if defined(STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED)
+#define STM32C0_OB_USER_HSE_NOT_REMAPPED        STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED                 /*!< Remap HSE source from PF to PC */
+#endif /* FLASH_OPTR_HSE_NOT_REMAPPED */
+#define STM32C0_OB_USER_RAM_PARITY_CHECK        STM32C0_FLASH_OPTR_RAM_PARITY_CHECK                 /*!< Sram parity check control */
+#define STM32C0_OB_USER_SECURE_MUXING_EN        STM32C0_FLASH_OPTR_SECURE_MUXING_EN                 /*!< Multiple-bonding security enable */
+#define STM32C0_OB_USER_NBOOT_SEL               STM32C0_FLASH_OPTR_nBOOT_SEL                        /*!< Boot Selection */
+#define STM32C0_OB_USER_NBOOT1                  STM32C0_FLASH_OPTR_nBOOT1                           /*!< nBoot1 configuration */
+#define STM32C0_OB_USER_NBOOT0                  STM32C0_FLASH_OPTR_nBOOT0                           /*!< nBoot0 configuration */
+#define STM32C0_OB_USER_NRST_MODE               STM32C0_FLASH_OPTR_NRST_MODE                        /*!< Reset pin configuration */
+#define STM32C0_OB_USER_INPUT_RESET_HOLDER      STM32C0_FLASH_OPTR_IRHEN                            /*!< Internal reset holder enable */
+
+#if defined(STM32C0_FLASH_OPTR_HSE_NOT_REMAPPED)
+#define STM32C0_OB_USER_ALL                     (STM32C0_OB_USER_BOR_EN           | STM32C0_OB_USER_BOR_LEV    | STM32C0_OB_USER_NRST_STOP | \
+                                         STM32C0_OB_USER_NRST_STDBY       | STM32C0_OB_USER_NRST_SHDW  | STM32C0_OB_USER_IWDG_SW   | \
+                                         STM32C0_OB_USER_IWDG_STOP        | STM32C0_OB_USER_IWDG_STDBY | STM32C0_OB_USER_WWDG_SW   | \
+                                         STM32C0_OB_USER_HSE_NOT_REMAPPED | STM32C0_OB_USER_RAM_PARITY_CHECK |               \
+                                         STM32C0_OB_USER_SECURE_MUXING_EN | STM32C0_OB_USER_NBOOT_SEL  | STM32C0_OB_USER_NBOOT1    | \
+                                         STM32C0_OB_USER_NBOOT0           | STM32C0_OB_USER_NRST_MODE  | STM32C0_OB_USER_INPUT_RESET_HOLDER) /*!< all option bits */
+#else
+#define STM32C0_OB_USER_ALL                     (STM32C0_OB_USER_BOR_EN           | STM32C0_OB_USER_BOR_LEV    | STM32C0_OB_USER_NRST_STOP | \
+                                         STM32C0_OB_USER_NRST_STDBY       | STM32C0_OB_USER_NRST_SHDW  | STM32C0_OB_USER_IWDG_SW   | \
+                                         STM32C0_OB_USER_IWDG_STOP        | STM32C0_OB_USER_IWDG_STDBY | STM32C0_OB_USER_WWDG_SW   | \
+                                         STM32C0_OB_USER_RAM_PARITY_CHECK | STM32C0_OB_USER_SECURE_MUXING_EN |               \
+                                         STM32C0_OB_USER_NBOOT_SEL        | STM32C0_OB_USER_NBOOT1     |                     \
+                                         STM32C0_OB_USER_NBOOT0           | STM32C0_OB_USER_NRST_MODE  | STM32C0_OB_USER_INPUT_RESET_HOLDER) /*!< all option bits */
+#endif /* FLASH_OPTR_HSE_NOT_REMAPPED */
+
 Target_StatusTypeDef Stm32c0_Flash_MassErase(void);
 Target_StatusTypeDef Stm32c0_Flash_Program(uint32_t Address, uint64_t Data);
 Target_StatusTypeDef Stm32c0_Flash_Unlock(void);
 Target_StatusTypeDef Stm32c0_Flash_Lock(void);
 Target_StatusTypeDef Stm32c0_Flash_WaitOperation(uint32_t Timeout);
-
+Target_StatusTypeDef Stm32c0_Flash_OB_Lock(void);
+Target_StatusTypeDef Stm32c0_Flash_OB_Unlock(void);
+uint32_t Stm32c0_Flash_OB_GetUser(void);
+void Stm32c0_Flash_OB_OptrConfig(uint32_t UserType, uint32_t UserConfig, uint32_t RDPLevel);
+void Stm32c0_Flash_OB_Launch(void);
+Target_StatusTypeDef Stm32c0_Flash_OB_Program(uint32_t RDPLevel);
 #endif /* STM32C0_FLASH_H_ */
