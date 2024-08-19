@@ -230,10 +230,10 @@ void swdio_out_mode(void);
 
 #define USE_SWD_FAST 0
 #if USE_SWD_FAST
-#define SWDIO_SET() GPIOB->BSRR = SW_DIO_Pin
-#define SWDIO_CLR() GPIOB->BSRR = (uint32_t)SW_DIO_Pin << 16U
-#define SWCLK_SET() GPIOB->BSRR = SW_CLK_Pin
-#define SWCLK_CLR() GPIOB->BSRR = (uint32_t)SW_CLK_Pin << 16U
+#define SWDIO_SET() GPIOB->BSRR = SWD_IO_Pin
+#define SWDIO_CLR() GPIOB->BSRR = (uint32_t)SWD_IO_Pin << 16U
+#define SWCLK_SET() GPIOB->BSRR = SWD_CLK_Pin
+#define SWCLK_CLR() GPIOB->BSRR = (uint32_t)SWD_CLK_Pin << 16U
 #else
 #define SWDIO_SET() HAL_GPIO_WritePin(SWD_IO_GPIO_Port, SWD_IO_Pin, GPIO_PIN_SET)
 #define SWDIO_CLR() HAL_GPIO_WritePin(SWD_IO_GPIO_Port, SWD_IO_Pin, GPIO_PIN_RESET)
@@ -244,7 +244,7 @@ void swdio_out_mode(void);
 #define SWDIO_OUT(bit) {if ( bit ) SWDIO_SET(); else SWDIO_CLR();}
 #if USE_SWD_FAST
 //#define SWDIO_IN() ((GPIO->P[SWDIO_PORT].DIN >> SWDIO_PIN) & 0x1)
-#define SWDIO_IN() ((GPIOB->IDR >> SWDIO_PIN) & 0x1)
+#define SWDIO_IN() ((GPIOB->IDR >> SWD_IO_Pin) & 0x1)
 #else
 #define SWDIO_IN() HAL_GPIO_ReadPin(SWD_IO_GPIO_Port, SWD_IO_Pin)
 #endif
