@@ -4,7 +4,12 @@
 
 #include <stdint.h>
 #include "led.h"
-#define FIRMWARE_FILENAME_HEX		"FIRMWARE.HEX"
+
+//"FIRMWARE.HEX"
+//"C0_0xAA_FILL.hex"
+//"C0_GPIO_EXTI.hex"
+//"C0_GPIO_TOGGLE.hex"
+#define FIRMWARE_FILENAME_HEX		"C0_GPIO_TOGGLE.hex"
 #define FIRMWARE_FILENAME_BIN		"FIRMWARE.BIN"
 
 /* Target SW-DP ID */

@@ -17,7 +17,7 @@
 #define PRINTF_REDIRECTION	int __io_putchar(int ch)
 #define TO_BE_IMPLEMENT_CALLBACK 0
 
-//#define printf(...)
+//#define printf(...) //for printf remove
 
 Target_InfoTypeDef target;
 volatile uint8_t u8_ButtonPushed = 0;
@@ -40,6 +40,38 @@ static bool (*Target_ProgramCallback[])(uint32_t addr, const uint8_t *buf, uint8
 					TO_BE_IMPLEMENT_CALLBACK,\
 					Target_ProgramCallback_STM32C0};
 
+uint32_t value = 0;
+void Option_Test(void)
+{
+#if 0
+	/* Option Byte Program Test Section Start*/
+	  	value = readMem(STM32C0_FLASH_OPTION);
+	  	printf("Start OB_USER = 0x%08"PRIX32"\n", value);
+
+	  	status = Stm32c0_Flash_Unlock();
+	  	Target_ErrorHandle(status, "Stm32c0_Flash_Unlock");
+	  	status = Stm32c0_Flash_OB_Unlock();
+	  	Target_ErrorHandle(status, "Stm32c0_Flash_OB_Unlock");
+	  	status = Stm32c0_Flash_OB_Program(STM32C0_OB_RDP_LEVEL_0);
+	  	Target_ErrorHandle(status, "Stm32c0_Flash_OB_Program");
+
+	  	Stm32c0_Flash_OB_Launch();
+	  	printf("OB Launch\n");
+
+	  	status = Target_Connect();
+	  	Target_ErrorHandle(status, "Target Connect Error");
+
+	  	Stm32c0_Flash_OB_Lock();
+	  	Target_ErrorHandle(status, "Stm32c0_Flash_OB_Lock");
+	  	status = Stm32c0_Flash_Lock();
+	  	Target_ErrorHandle(status, "Stm32c0_Flash_Lock");
+
+	  	value = readMem(STM32C0_FLASH_OPTION_OPTR);
+	  	printf("End OB_USER = 0x%08"PRIX32"\n", value);
+	  	/* Option Byte Program Test Section End */
+
+#endif
+}
 
 void Target_MainLoop(void)
 {
@@ -81,7 +113,6 @@ void Target_MainLoop(void)
 
     u32_ElasedTime = HAL_GetTick() - u32_StartTime;
     printf("Total Elapsed Programming Time: %d ms\n\n", u32_ElasedTime);
-
     Target_LedSet(TARGET_LED_STAT_COMPLETE);
     Buzzer_SetState(BUZZER_PROG_COMPLETE);
   }
@@ -284,12 +315,15 @@ static void Target_Classify(Target_InfoTypeDef *target)
 
 bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 {
-	uint64_t tmp[2];
+	volatile uint64_t tmp[4] = {0};
 	Target_StatusTypeDef status = TARGET_OK;
+
+	/* Check valid flash address */
+	/* To be implement */
 
 	/* Convert Hex parsed data (uint8_t, Byte) to uint64_t(Double Word) */
 	/* STM32C0 Flash Double Word Program Support(Standard) */
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 4; i++) {
   	tmp[i] = ((uint64_t*)buf)[i];
   }
 
@@ -299,14 +333,16 @@ bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t b
   	return false;
 
   /*Flash programming double word */
-  for(uint32_t i = 0; i < 2; i++)
+  for(uint32_t i = 0; i < 4; i++)
 	{
 		status = Stm32c0_Flash_Program(addr + (i*8), tmp[i]);
 		if(status != TARGET_OK)
+		{
+			Stm32c0_Flash_Lock();
 			return false;
-
+		}
 		/* If bufsize only one Double word, quit loop */
-		if(bufsize <= 8)
+			if (bufsize <= (i + 1) * 8)
 			break;
 	}
 
@@ -320,17 +356,17 @@ bool Target_ProgramCallback_STM32C0(uint32_t addr, const uint8_t *buf, uint8_t b
 
 bool Target_VerifyCallback(uint32_t addr, const uint8_t *buf, uint8_t bufsize)
 {
-	uint8_t tmp[16];
-	uint32_t u32_ReadData[4];
+	uint8_t tmp[32];
+	uint32_t u32_ReadData[8];
 
 	/* Read 4-word from target flash memory */
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < (bufsize/4); i++)
 	{
 		u32_ReadData[i] = readMem(addr + (i*4));
 	}
 
 	/* Convert uint32_t to uint8_t */
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < (bufsize / 4); i++) {
   	tmp[4 * i]     = u32_ReadData[i] & 0xFF;
   	tmp[4 * i + 1] = (u32_ReadData[i] >> 8) & 0xFF;
   	tmp[4 * i + 2] = (u32_ReadData[i] >> 16) & 0xFF;
