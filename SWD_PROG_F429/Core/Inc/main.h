@@ -72,21 +72,19 @@ void MX_USART1_UART_Init(void);
 #define SWD_CLK_GPIO_Port GPIOB
 #define LED_RED_Pin GPIO_PIN_10
 #define LED_RED_GPIO_Port GPIOG
+#define SPI_CS_Pin GPIO_PIN_11
+#define SPI_CS_GPIO_Port GPIOA
 #define PROGRAM_BTN_Pin GPIO_PIN_13
 #define PROGRAM_BTN_GPIO_Port GPIOC
 #define PROGRAM_BTN_EXTI_IRQn EXTI15_10_IRQn
 #define TARGET_RST_Pin GPIO_PIN_8
 #define TARGET_RST_GPIO_Port GPIOA
-#define SD_CARD_DET_Pin GPIO_PIN_13
-#define SD_CARD_DET_GPIO_Port GPIOI
 #define LED_ORANGE_Pin GPIO_PIN_7
 #define LED_ORANGE_GPIO_Port GPIOG
 #define LED_GREEN_Pin GPIO_PIN_6
 #define LED_GREEN_GPIO_Port GPIOG
 #define OPTION_PROG_DIP_SW_Pin GPIO_PIN_0
 #define OPTION_PROG_DIP_SW_GPIO_Port GPIOA
-#define SPI_CS_Pin GPIO_PIN_0
-#define SPI_CS_GPIO_Port GPIOJ
 
 /* USER CODE BEGIN Private defines */
 
